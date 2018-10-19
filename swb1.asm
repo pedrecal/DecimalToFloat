@@ -127,13 +127,13 @@ section .text
         print askNum, len
         scan ascii, 16
 
-        ; call _strToInt
-        ; mov r15, rax
-        ; call _lascaDiv
-        ; call _reverseStr
-        ; print reffub, 16
+        call _strToInt
+        mov r15, rax
+        call _lascaDiv
+        call _reverseStr
+        print reffub, 16
 
-        ; print 10, 1
+        print 10, 1
 
         mov r12, 7
         call _makeExp
