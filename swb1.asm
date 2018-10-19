@@ -21,24 +21,8 @@
 ;
 ; To assemble and run:
 ;
-;     nasm -felf64 swb.asm && ld swb.o && ./a.out
-; --------------------------------------------------------------------------------------------------------------------------------------------
-; section .data
-;   db  = define byte        (8 bits)
-;   dw  = define word        (2 * 8 bits = 16 bits)
-;   dd  = define double word (2 * 16 bits = 32 bits)
-;   dq  = define quad word   (4 * 16 bits = 64 bits)
-;   0   = termination (\0)
-;   10  = termination (\n)
-;   13  = carriage return
+;     nasm -felf64 swb1.asm && ld swb1.o && ./a.out
 ;
-; section .bss
-;   resb = reserve byte
-;   resw = reserve word
-;   resd = reserve double word
-;   .
-;   .
-;   .
 
 STDIN equ 0
 STDOUT equ 1
@@ -96,6 +80,7 @@ section .data
     len1 equ $-askNum1
     digit db 0,10
     buffer times 16 db 0
+    reffub times 16 db 0
 
 section .bss
     ascii resb 1
@@ -108,8 +93,15 @@ section .text
         scan ascii, 16
         call _strToInt
         call _lascaDiv
-        print buffer, 16
+        ; print buffer, 16
+        call _reverseStr
+        print reffub, 16
         exit
+
+    ;Input
+    ;   rsi = string com o num
+    ;Output
+    ;   rax = string convertida pra int
 
     _strToInt:                  ; int salvo em rax
         movzx rax, byte[rsi]	; Pega primeiro byte da string
@@ -130,6 +122,12 @@ section .text
         mov r15, rax
 		ret						; Se não acabou os números válidos e retorna
 
+    ;Input
+    ;   rax = num a ser dividido
+    ;Output
+    ;   r14 = resto a cada iteração
+    ;   r13 = result da div a cada iteração
+
     _modTwo:
         mov rdx, 0              ; Resto
         mov rcx, 2              ; Divide por 2
@@ -138,26 +136,53 @@ section .text
         mov r14, rdx            ; R14 guarda RESTOS
         ret
 
+    ;Input
+    ;   r14 = resto da divisão
+    ;Output
+    ;   buffer com os restos concatenados
+
     _concat:
         mov rax, r14
         add rax, '0'
         mov [buffer + r12], rax
         ret
 
+    ;Input
+    ;   buffer = restos já cocatenados, porém ao contrário
+    ;Output
+    ;   reffub = buffer ao contrário
+
+    _reverseStr:
+        mov r12, 16
+        mov r11, 0
+        .recur:
+            mov r10, [buffer + r12]
+            mov [reffub + r11], r10
+            dec r12
+            inc r11
+            cmp r12, 0
+            jnz .recur
+        ret
+
+    ;Input
+    ;   r15 = inteiro original, dada entrada
+    ;Output
+    ;   r14 = resto a cada iteração
+    ;   r13 = result da div a cada iteração
+    ;   r12 = qtd de bits, usado em concat
+
     _lascaDiv:
         mov rax, r15
         mov r12, 0
-        mov r11, 0
         .recur:
             call _modTwo
             inc r12
-            print resdiv, 15
-            printInt r13
-            print resres, 7
-            printInt r14
+            ; print resdiv, 15
+            ; printInt r13
+            ; print resres, 7
+            ; printInt r14
             call _concat
             mov rax, r13
             cmp r13, 0
             jnz .recur
-        mov [buffer + 15], r11
         ret
