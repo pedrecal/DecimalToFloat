@@ -32,6 +32,8 @@ SYS_READ equ 0
 SYS_WRITE equ 1
 SYS_EXIT equ 60
 
+FLOAT_BIAS equ 63
+
 %macro exit 0
     mov rax, SYS_EXIT   ; system call for exit
     xor rdi, rdi        ; exit code 0
@@ -71,16 +73,49 @@ SYS_EXIT equ 60
 
 %endmacro
 
+
+;Input
+;   r14 = resto da divisão
+;Output
+;   buffer com os restos concatenados
+
+%macro concat 2
+
+    mov rax, %1
+    add rax, '0'
+    mov [%2 + r12], rax
+
+%endmacro
+
+;Input
+;   buffer = restos já cocatenados, porém ao contrário
+;Output
+;   reffub = buffer ao contrário
+
+
+%macro reverseStr 3
+
+        mov r12, %1
+        mov r11, 0
+        .recur:
+            mov r10, [%2 + r12]
+            mov [%3 + r11], r10
+            dec r12
+            inc r11
+            cmp r12, 0
+            jnz .recur
+
+%endmacro
+
 section .data
     resdiv db "RESULTADO DIV: "
     resres db "RESTO: "
     askNum db "Entre com o decimal",10
     len equ $-askNum
-    askNum1 db "TESTE",10
-    len1 equ $-askNum1
     digit db 0,10
     buffer times 16 db 0
     reffub times 16 db 0
+    exp times 7 db 0
 
 section .bss
     ascii resb 1
@@ -91,11 +126,21 @@ section .text
     _start:
         print askNum, len
         scan ascii, 16
-        call _strToInt
+
+        ; call _strToInt
+        ; mov r15, rax
+        ; call _lascaDiv
+        ; call _reverseStr
+        ; print reffub, 16
+
+        ; print 10, 1
+
+        mov r12, 7
+        call _makeExp
         call _lascaDiv
-        ; print buffer, 16
         call _reverseStr
         print reffub, 16
+
         exit
 
     ;Input
@@ -119,7 +164,6 @@ section .text
 		sub rcx, '0'			; Transforma para "Inteiro"
 		cmp rcx, 9				; Checa se é um digito (Entre 0-9)
 		jbe .nextNum			; Se for digito pula para o Next_Digit
-        mov r15, rax
 		ret						; Se não acabou os números válidos e retorna
 
     ;Input
@@ -137,34 +181,6 @@ section .text
         ret
 
     ;Input
-    ;   r14 = resto da divisão
-    ;Output
-    ;   buffer com os restos concatenados
-
-    _concat:
-        mov rax, r14
-        add rax, '0'
-        mov [buffer + r12], rax
-        ret
-
-    ;Input
-    ;   buffer = restos já cocatenados, porém ao contrário
-    ;Output
-    ;   reffub = buffer ao contrário
-
-    _reverseStr:
-        mov r12, 16
-        mov r11, 0
-        .recur:
-            mov r10, [buffer + r12]
-            mov [reffub + r11], r10
-            dec r12
-            inc r11
-            cmp r12, 0
-            jnz .recur
-        ret
-
-    ;Input
     ;   r15 = inteiro original, dada entrada
     ;Output
     ;   r14 = resto a cada iteração
@@ -177,12 +193,26 @@ section .text
         .recur:
             call _modTwo
             inc r12
-            ; print resdiv, 15
-            ; printInt r13
-            ; print resres, 7
-            ; printInt r14
-            call _concat
+            concat r14, buffer
             mov rax, r13
             cmp r13, 0
             jnz .recur
+        ret
+
+    _reverseStr:
+        mov r10, 16
+        mov r11, 0
+        .recur:
+            mov r9, [buffer + r10]
+            mov [reffub + r11], r9
+            dec r10
+            inc r11
+            cmp r10, 0
+            jnz .recur
+        ret
+
+    _makeExp:
+        lea rax, [FLOAT_BIAS + r12]
+        dec rax
+        mov r15, rax
         ret
