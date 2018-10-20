@@ -1,29 +1,3 @@
-; Sua tarefa será escrever dois programas utilizando a linguagem montagem para processadores intel x86/64, utilizando o montador NASM.
-; O primeiro programa deverá converter um número decimal para float;
-; O segundo programa deverá converter um número float para decimal;
-; Em ambos os casos o resultado deverá ser impresso na tela;
-; Em ambos os casos a entrada deverá ser via teclado;
-
-; [Restrições]
-; Para isso considere: A representação float segue a norma IEEE 754, exceto por apresentar a seguinte distribuição de bits:
-; Um bit para sinal;
-; Sete bits para o campo expoente;
-; Oito bits para o campo fracionário;
-
-; Você deverá considerar o arredondamento quando for o caso;
-; É apenas permitido a utilização de registradores de uso geral (r0 à r15), exceto aqueles de uso restrito;
-; Não é permitido o uso da pilha para armazenamento temporário;
-
-; [Submissão]
-; O seu código deverá ser publicado no github;
-; Você deverá submeter o seu código com o link do github para esta atividade
-; O seu código deverá conter na seção inicial, comentários explicando o funcionamento geral do programa;
-;
-; To assemble and run:
-;
-;     nasm -felf64 swb1.asm && ld swb1.o && ./a.out
-;
-
 STDIN equ 0
 STDOUT equ 1
 STDERR equ 2
@@ -33,7 +7,6 @@ SYS_WRITE equ 1
 SYS_EXIT equ 60
 
 FLOAT_BIAS equ 63
-FRAC equ 8
 
 %macro exit 0
     mov rax, SYS_EXIT   ; system call for exit
@@ -88,35 +61,12 @@ FRAC equ 8
 
 %endmacro
 
-;Input
-;   buffer = restos já cocatenados, porém ao contrário
-;Output
-;   reffub = buffer ao contrário
-
-
-%macro reverseStr 3
-
-        mov r12, %1
-        mov r11, 0
-        .recur:
-            mov r10, [%2 + r12]
-            mov [%3 + r11], r10
-            dec r12
-            inc r11
-            cmp r12, 0
-            jnz .recur
-
-%endmacro
-
 section .data
-    resdiv db "RESULTADO DIV: "
-    resres db "RESTO: "
     askNum db "Entre com o decimal",10
     len equ $-askNum
     digit db 0,10
-    buffer times 16 db 0
-    reffub times 16 db 0
-    exp times 7 db 0
+    buffer times 8 db 0
+    reffub times 8 db 0
 
 section .bss
     ascii resb 1
@@ -128,15 +78,8 @@ section .text
         print askNum, len
         scan ascii, 16
         call _strToInt
-        ; call _makeFrac
-        ; print reffub, 16
-
-        ; print 10, 1
-        ; dec r12
-        call _makeExp
-        call _lascaDiv
-        call _reverseStr
-        print reffub, 16
+        call _makeFrac
+        print reffub, 8
 
         exit
 
@@ -168,7 +111,6 @@ section .text
     ;Output
     ;   r14 = resto a cada iteração
     ;   r13 = result da div a cada iteração
-
     _modTwo:
         mov rdx, 0              ; Resto
         mov rcx, 2              ; Divide por 2
@@ -183,7 +125,6 @@ section .text
     ;   r14 = resto a cada iteração
     ;   r13 = result da div a cada iteração
     ;   r12 = qtd de bits, usado em concat
-
     _lascaDiv:
         mov rax, r15
         mov r12, 0
@@ -196,8 +137,13 @@ section .text
             jnz .recur
         ret
 
+    ;Input
+    ;   buffer = restos já cocatenados, porém ao contrário
+    ;Output
+    ;   reffub = buffer ao contrário
+
     _reverseStr:
-        mov r10, r12
+        mov r10, 8
         mov r11, 0
         .recur:
             mov r9, [buffer + r10]
@@ -208,27 +154,8 @@ section .text
             jnz .recur
         ret
 
-    ; Pega o Bias(63) e soma com o deslocamento do ponto(que tá sendo dado no start)
-    _makeExp:
-        lea rax, [FLOAT_BIAS + r12]
-        ; dec rax
-        mov r15, rax
-        ret
-
-    _completeWZeros:
-        mov r15, 48
-        mov r8, r12
-        .recur:
-            mov [reffub + r8], r15
-            inc r8
-            cmp r8, 8
-            jne .recur
-        ret
-
     _makeFrac:
         mov r15, rax
         call _lascaDiv
         call _reverseStr
-        call _completeWZeros
         ret
-
