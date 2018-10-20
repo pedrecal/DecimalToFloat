@@ -33,7 +33,6 @@ SYS_WRITE equ 1
 SYS_EXIT equ 60
 
 FLOAT_BIAS equ 63
-FRAC equ 8
 
 %macro exit 0
     mov rax, SYS_EXIT   ; system call for exit
@@ -96,15 +95,22 @@ FRAC equ 8
 
 %macro reverseStr 3
 
-        mov r12, %1
-        mov r11, 0
-        .recur:
-            mov r10, [%2 + r12]
-            mov [%3 + r11], r10
-            dec r12
-            inc r11
-            cmp r12, 0
-            jnz .recur
+    mov r12, %1
+    mov r11, 0
+    .recur:
+        mov r10, [%2 + r12]
+        mov [%3 + r11], r10
+        dec r12
+        inc r11
+        cmp r12, 0
+        jnz .recur
+
+%endmacro
+
+%macro copyStr 2
+
+    mov rax, [%1]
+    mov [%2], rax
 
 %endmacro
 
@@ -116,7 +122,8 @@ section .data
     digit db 0,10
     buffer times 16 db 0
     reffub times 16 db 0
-    exp times 7 db 0
+    exp times 16 db 0
+    frac times 16 db 0
 
 section .bss
     ascii resb 1
@@ -127,16 +134,18 @@ section .text
     _start:
         print askNum, len
         scan ascii, 16
-        call _strToInt
-        ; call _makeFrac
-        ; print reffub, 16
 
-        ; print 10, 1
-        ; dec r12
+        call _strToInt
+        mov r15, rax
+
+        call _makeFrac
+        ; call _copyString
+        ; print reffub, 16    ;Printa FRAC
+
         call _makeExp
-        call _lascaDiv
-        call _reverseStr
-        print reffub, 16
+
+        print reffub, 16  ;Printa EXP
+        print frac, 16
 
         exit
 
@@ -197,7 +206,7 @@ section .text
         ret
 
     _reverseStr:
-        mov r10, r12
+        mov r10, 16
         mov r11, 0
         .recur:
             mov r9, [buffer + r10]
@@ -208,11 +217,16 @@ section .text
             jnz .recur
         ret
 
-    ; Pega o Bias(63) e soma com o deslocamento do ponto(que tá sendo dado no start)
-    _makeExp:
-        lea rax, [FLOAT_BIAS + r12]
-        ; dec rax
-        mov r15, rax
+    _reverseStrFrac:
+        mov r10, r12
+        mov r11, 0
+        .recur:
+            mov r9, [buffer + r10]
+            mov [reffub + r11], r9
+            dec r10
+            inc r11
+            cmp r10, 0
+            jnz .recur
         ret
 
     _completeWZeros:
@@ -225,10 +239,24 @@ section .text
             jne .recur
         ret
 
-    _makeFrac:
+    _copyString:
+        mov rax, [reffub]
+        mov [frac], rax
+        ret
+
+    _makeExp:
+        lea rax, [FLOAT_BIAS + r12]
+        dec rax
         mov r15, rax
         call _lascaDiv
         call _reverseStr
-        call _completeWZeros
+        mov r15, 0
+        mov [reffub + 0], r15
         ret
 
+    _makeFrac:
+        call _lascaDiv
+        call _reverseStrFrac
+        call _completeWZeros
+        copyStr reffub, frac
+        ret
