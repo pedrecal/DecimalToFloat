@@ -221,7 +221,7 @@ section .text
         mov r10, r12
         mov r11, 0
         .recur:
-            mov r9, [buffer + r10]
+            mov r9, [buffer + r10 - 1]
             mov [reffub + r11], r9
             dec r10
             inc r11
