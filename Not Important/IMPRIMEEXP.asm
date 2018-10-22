@@ -131,12 +131,15 @@ section .text
         call _strToInt
         mov r15, rax
 
-        call _makeFrac
-        print reffub, 16    ;Printa FRAC
+        call _lascaDiv
+        call _reverseStr
+        ; print reffub, 16
 
+        ; mov r12, 7
         call _makeExp
-
-        ; print reffub, 16  ;Printa EXP
+        call _lascaDiv
+        call _reverseStr
+        print reffub, 16
 
         exit
 
@@ -208,42 +211,8 @@ section .text
             jnz .recur
         ret
 
-    _reverseStrFrac:
-        mov r10, r12
-        mov r11, 0
-        .recur:
-            mov r9, [buffer + r10]
-            mov [reffub + r11], r9
-            dec r10
-            inc r11
-            cmp r10, 0
-            jnz .recur
-        ret
-
-    _completeWZeros:
-        mov r15, 48
-        mov r8, r12
-        .recur:
-            mov [reffub + r8], r15
-            inc r8
-            cmp r8, 8
-            jne .recur
-        ret
-
-
-
     _makeExp:
         lea rax, [FLOAT_BIAS + r12]
         dec rax
         mov r15, rax
-        call _lascaDiv
-        call _reverseStr
-        mov r15, 0
-        mov [reffub + 0], r15
-        ret
-
-    _makeFrac:
-        call _lascaDiv
-        call _reverseStrFrac
-        call _completeWZeros
         ret
