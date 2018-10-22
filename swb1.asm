@@ -124,6 +124,8 @@ section .data
     reffub times 16 db 0
     exp times 16 db 0
     frac times 16 db 0
+    sign db 0
+    signB db 0
 
 section .bss
     ascii resb 1
@@ -133,6 +135,8 @@ section .text
 
     _start:
         print askNum, len
+        scan sign, 1
+        call _signCompare
         scan ascii, 16
 
         call _strToInt
@@ -143,7 +147,7 @@ section .text
         ; print reffub, 16    ;Printa FRAC
 
         call _makeExp
-
+        print signB, 1
         print reffub, 16  ;Printa EXP
         print frac, 16
 
@@ -259,4 +263,19 @@ section .text
         call _reverseStrFrac
         call _completeWZeros
         copyStr reffub, frac
+        ret
+
+    _signCompare:
+        mov r15, [sign]         ; Joga bit de sinal em r15
+        mov r14, 43             ; Joga sinal + em r14
+        cmp r15, r14            ; Compara sinal entrado com +
+        jne .setNeg             ; Se for diferente pula pra .setNeg
+        mov r14, 48             ; joga 0 em r14
+        mov [signB], r14        ;
+        jmp .done
+        .setNeg:
+            mov r14, 49         ; Joga 1 em r14
+            mov [signB], r14    ; joga 1 em signB
+        .done:
+            ret
         ret
