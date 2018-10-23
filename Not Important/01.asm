@@ -8,15 +8,6 @@
 ; O valor não será correto caso o usuário não entre com o número
 ; Caso o usuário adicione parte fracionária ao número, esta parte será desconsiderada pelo programa
 
-;Funcionamento: Dada entrada do usuário, exemplo: +23.0
-;o programa recebe separadamente o signal, realiza uma comparacao, na chamada _compareSign
-;após isso, ascii recebe a string do num. entao eh feita a chamada de _strToInt que fará a conversao para inteiro
-; então é feita a chamada de _makeFrac
-; em makefrac é feita a chamada de binarymake, onde, recursivamente é feita a divisao e cocatenacao dos restos para se obter o binario
-;é chamada uma macro onde irá reverter a string contendo os restos, e removerá o primeiro digito(que se encontraria atras do ponto), aqui temos um problema, já que há esse corte de 1bit nós acabamos ficando com 7 bits em frac ao invés de 8
-;entao eh chamado o makeexp, onde teremos a formula de exp e binary make, chegando assim nos vals. desejados
-
-
 STDIN equ 0
 STDOUT equ 1
 STDERR equ 2
@@ -132,13 +123,14 @@ section .text
         scan ascii, 16
 
         call _strToInt
+        mov r15, rax
 
         call _makeFrac
         call _makeExp
 
-        print sign, 1
-        print reffub, 8  ;Printa EXP
-        print frac, 8
+        ; print sign, 1
+        ; print reffub, 8  ;Printa EXP
+        ; print frac, 8
 
         exit
 
@@ -163,7 +155,6 @@ section .text
         sub rcx, '0'			; Transforma para "Inteiro"
         cmp rcx, 9				; Checa se é um digito (Entre 0-9)
         jbe .nextNum			; Se for digito pula para o Next_Digit
-        mov r15, rax            ; Guarda inteiro em r15
         ret						; Se não acabou os números válidos e retorna
 
     ;Input
@@ -187,7 +178,7 @@ section .text
     ;   r13 = result da div a cada iteração
     ;   r12 = qtd de bits, usado em concat
 
-    _binaryMake:
+    _lascaDiv:
         mov rax, r15
         mov r12, 0
         .recur:
@@ -196,6 +187,18 @@ section .text
             concat r14, buffer
             mov rax, r13
             cmp r13, 0
+            jnz .recur
+        ret
+
+    _reverseStrFrac:
+        mov r10, r12
+        mov r11, 0
+        .recur:
+            mov r9, [buffer + r10 - 1]
+            mov [reffub + r11], r9
+            dec r10
+            inc r11
+            cmp r10, 0
             jnz .recur
         ret
 
@@ -213,16 +216,32 @@ section .text
         lea rax, [FLOAT_BIAS + r12]
         dec rax
         mov r15, rax
-        call _binaryMake
+        call _lascaDiv
         reverseStr 8, buffer, reffub
         ret
 
     _makeFrac:
-        call _binaryMake
-        reverseStr r12, buffer-1, reffub
+        call _lascaDiv
+        ; print buffer, 8
+        reverseStr r12, buffer, reffub
+        ; print reffub, 8
+        call _shiftStrLeft
+        print reffub, 8
         call _completeWZeros
         copyStr reffub, frac
         ret
+
+    _shiftStrLeft:
+        mov r8, 1
+        .recur:
+            mov r9, [reffub + r8]
+            mov [reffub + r8 - 1], r9
+            inc r8
+            cmp r8, 8
+            jne .recur
+        ret
+
+
 
 ;Recebe o bit de sinal dado pelo user, compara com os ascii de + e -
 ;Atribui 0 ou 1, a depender do sinal(ao msm bit)
